@@ -1,0 +1,22 @@
+# Maven build output - generated, never committed
+target/
+
+# IDE - personal to your machine
+.idea/
+*.iml
+.classpath
+.project
+.settings/
+bin/
+.vscode/
+
+# OS junk
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Secrets - never commit these
+.env
