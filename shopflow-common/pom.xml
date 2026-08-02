@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+
+    <modelVersion>4.0.0</modelVersion>
+
+    <!-- Points at the parent. This is what makes it a "child" - it
+         inherits the Java version, plugin config and dependency versions. -->
+    <parent>
+        <groupId>com.shopflow</groupId>
+        <artifactId>shopflow-platform</artifactId>
+        <version>1.0.0-SNAPSHOT</version>
+    </parent>
+
+    <artifactId>shopflow-common</artifactId>
+    <name>ShopFlow Common</name>
+    <description>Wire contract only: event record, enums, messaging constants.
+                 No Spring beans, no business logic.</description>
+
+    <!-- Deliberately NO spring-boot-maven-plugin: this is a library,
+         not an application. It has no main() and never runs on its own. -->
+
+    <dependencies>
+        <!-- Jackson annotations only, so the event record can control its
+             JSON shape. That is contract, not behaviour. -->
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-annotations</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.jacoco</groupId>
+                <artifactId>jacoco-maven-plugin</artifactId>
+            </plugin>
+        </plugins>
+    </build>
+
+</project>
