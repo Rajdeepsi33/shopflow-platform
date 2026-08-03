@@ -41,3 +41,34 @@ management:
   endpoint:
     health:
       show-details: always
+
+# ── application settings ──────────────────────────────────────
+shopflow:
+  catalog:
+    base-url: ${CATALOG_BASE_URL:https://fakestoreapi.com}
+  cache:
+    product-ttl: 10m
+    order-ttl: 5m
+
+# ── resilience: circuit breaker, retry, time limiter ──────────
+resilience4j:
+  circuitbreaker:
+    instances:
+      productCatalog:
+        sliding-window-type: COUNT_BASED
+        sliding-window-size: 10
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: 10s
+        permitted-number-of-calls-in-half-open-state: 3
+        automatic-transition-from-open-to-half-open-enabled: true
+        register-health-indicator: true
+  retry:
+    instances:
+      productCatalog:
+        max-attempts: 3
+        wait-duration: 200ms
+        exponential-backoff-multiplier: 2
+  timelimiter:
+    instances:
+      productCatalog:
+        timeout-duration: 2s

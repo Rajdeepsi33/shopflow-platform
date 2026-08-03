@@ -43,7 +43,7 @@ public class OrderController {
     @Operation(summary = "Fetch one order", description = "Served from Redis when cached")
     @ApiResponse(responseCode = "200", description = "Order found")
     @ApiResponse(responseCode = "404", description = "Order not found")
-    public ResponseEntity<OrderResponseDto> getById(@PathVariable String orderRef) {
+    public ResponseEntity<OrderResponseDto> getById(@PathVariable("orderRef") String orderRef) {
         return ResponseEntity.ok(orderService.findByRef(orderRef));
     }
 
@@ -51,8 +51,8 @@ public class OrderController {
     @Operation(summary = "Search orders", description = "Paginated, optionally filtered")
     @ApiResponse(responseCode = "200", description = "Page of orders")
     public ResponseEntity<Page<OrderResponseDto>> search(
-            @RequestParam(required = false) OrderStatus status,
-            @RequestParam(required = false) ShippingType shippingType,
+            @RequestParam(name = "status", required = false) OrderStatus status,
+            @RequestParam(name = "shippingType", required = false) ShippingType shippingType,
             @PageableDefault(size = 20) Pageable pageable) {
 
         return ResponseEntity.ok(
@@ -64,7 +64,7 @@ public class OrderController {
     @ApiResponse(responseCode = "200", description = "Order cancelled")
     @ApiResponse(responseCode = "404", description = "Order not found")
     @ApiResponse(responseCode = "409", description = "Illegal state transition")
-    public ResponseEntity<OrderResponseDto> cancel(@PathVariable String orderRef) {
+    public ResponseEntity<OrderResponseDto> cancel(@PathVariable("orderRef") String orderRef) {
         return ResponseEntity.ok(orderService.cancel(orderRef));
     }
 }

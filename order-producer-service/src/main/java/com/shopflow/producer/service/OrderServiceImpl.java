@@ -18,11 +18,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.math.BigDecimal;
-import java.math.RoundingMode;
-import java.util.ArrayList;
 import java.util.List;
-import java.util.UUID;
 
 @Slf4j
 @Service
@@ -30,35 +26,28 @@ import java.util.UUID;
 public class OrderServiceImpl implements OrderService {
 
     private static final String GB = "GB";
-    private static final int MONEY_SCALE = 2;
 
     private final OrderRepository orderRepository;
     private final OrderMapper orderMapper;
+    private final ProductCatalogClient productCatalogClient;
+    private final OrderPersistenceService orderPersistenceService;
 
+    /**
+     * Deliberately NOT @Transactional.
+     *
+     * The catalogue call is external HTTP and can take seconds when the
+     * upstream is slow. Holding a pooled database connection across it
+     * would exhaust the pool under load, so the enrichment happens here
+     * and only the write is transactional, inside OrderPersistenceService.
+     */
     @Override
-    @Transactional
     public OrderResponseDto createOrder(OrderRequestDto request) {
 
         assertShippingDestinationIsValid(request.shippingType(), request.destinationCountry());
 
-       
         List<OrderItem> items = buildItems(request.items());
 
-        Order order = Order.builder()
-                .orderRef(UUID.randomUUID().toString())
-                .customerEmail(request.customerEmail())
-                .shippingType(request.shippingType())
-                .destinationCountry(request.destinationCountry())
-                .status(OrderStatus.CREATED)
-                .orderTotal(sumLineTotals(items))
-                .correlationId(UUID.randomUUID().toString())
-                .items(new ArrayList<>())
-                .build();
-
-        items.forEach(order::addItem);
-
-        Order saved = orderRepository.save(order);
-        log.info("Created order {} with {} items", saved.getOrderRef(), items.size());
+        Order saved = orderPersistenceService.persist(request, items);
 
         return orderMapper.toResponse(saved);
     }
@@ -93,8 +82,8 @@ public class OrderServiceImpl implements OrderService {
 
     /**
      * Runs in its own transaction: the publisher confirm arrives on a
-     * Rabbit I/O thread, outside the request transaction, which has
-     * already committed by then.
+     * Rabbit I/O thread, after the request transaction has committed,
+     * so there is no transaction to join.
      */
     @Override
     @Transactional(propagation = Propagation.REQUIRES_NEW)
@@ -109,6 +98,19 @@ public class OrderServiceImpl implements OrderService {
     }
 
     // ── helpers ──────────────────────────────────────────────
+
+    /**
+     * Prices and titles always come from the catalogue, never from the
+     * client, so a caller cannot declare their own price.
+     */
+    private List<OrderItem> buildItems(List<OrderItemRequestDto> requested) {
+        return requested.stream()
+                .map(item -> {
+                    ProductDto product = productCatalogClient.fetchProduct(item.productId());
+                    return orderMapper.toItem(product, item.quantity());
+                })
+                .toList();
+    }
 
     private void updateStatus(String orderRef, OrderStatus status) {
         orderRepository.findByOrderRef(orderRef).ifPresentOrElse(
@@ -130,30 +132,5 @@ public class OrderServiceImpl implements OrderService {
             throw new InvalidOrderStateException(
                     order.getOrderRef(), order.getStatus(), OrderStatus.CANCELLED);
         }
-    }
-
-    private BigDecimal sumLineTotals(List<OrderItem> items) {
-        return items.stream()
-                .map(OrderItem::getLineTotal)
-                .reduce(BigDecimal.ZERO, BigDecimal::add)
-                .setScale(MONEY_SCALE, RoundingMode.HALF_UP);
-    }
-
-    /**
-     * Temporary stand-in until the catalogue client lands in slice 3.
-     */
-    private List<OrderItem> buildItems(List<OrderItemRequestDto> requested) {
-        return requested.stream()
-                .map(item -> {
-                    ProductDto placeholder = new ProductDto(
-                            item.productId(),
-                            "Product " + item.productId(),
-                            new BigDecimal("10.00"),
-                            "placeholder",
-                            null,
-                            ProductDto.DataSource.CATALOG);
-                    return orderMapper.toItem(placeholder, item.quantity());
-                })
-                .toList();
     }
 }
