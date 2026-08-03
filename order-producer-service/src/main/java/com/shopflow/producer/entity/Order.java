@@ -36,7 +36,7 @@ public class Order {
     @Column(name = "shipping_type", nullable = false, length = 20)
     private ShippingType shippingType;
 
-    @Column(name = "destination_country", nullable = false, length = 2)
+    @Column(name = "destination_country", nullable = false, length = 2, columnDefinition = "CHAR(2)")
     private String destinationCountry;
 
     @Enumerated(EnumType.STRING)
