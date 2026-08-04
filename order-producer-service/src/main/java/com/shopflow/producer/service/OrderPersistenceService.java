@@ -4,9 +4,11 @@ import com.shopflow.producer.dto.OrderRequestDto;
 import com.shopflow.producer.entity.Order;
 import com.shopflow.producer.entity.OrderItem;
 import com.shopflow.producer.entity.OrderStatus;
+import com.shopflow.producer.messaging.OrderCreatedApplicationEvent;
 import com.shopflow.producer.repository.OrderRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -36,6 +38,7 @@ public class OrderPersistenceService {
     private static final int MONEY_SCALE = 2;
 
     private final OrderRepository orderRepository;
+    private final ApplicationEventPublisher applicationEventPublisher;
 
     @Transactional
     public Order persist(OrderRequestDto request, List<OrderItem> items) {
@@ -55,6 +58,13 @@ public class OrderPersistenceService {
 
         Order saved = orderRepository.save(order);
         log.info("Created order {} with {} items", saved.getOrderRef(), items.size());
+
+        // Spring holds this until the transaction commits, then hands it
+        // to OrderEventPublisher. If the transaction rolls back the
+        // listener never fires, so no event is published for an order
+        // that does not exist.
+        applicationEventPublisher.publishEvent(
+                new OrderCreatedApplicationEvent(saved.getOrderRef()));
 
         return saved;
     }

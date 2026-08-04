@@ -32,6 +32,11 @@ spring:
     port: ${SPRING_RABBITMQ_PORT:5672}
     username: ${SPRING_RABBITMQ_USERNAME:guest}
     password: ${SPRING_RABBITMQ_PASSWORD:guest}
+    # correlated: enables publisher confirms AND attaches an id to each
+    # message, so a confirm can be traced back to the order that sent it
+    publisher-confirm-type: correlated
+    # surfaces messages the broker could not route to any queue
+    publisher-returns: true
 
 management:
   endpoints:
