@@ -1,0 +1,61 @@
+server:
+  port: 8082
+
+spring:
+  application:
+    name: order-consumer-service
+
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:mysql://localhost:3306/shopflow_fulfilment?useSSL=false&allowPublicKeyRetrieval=true}
+    username: ${SPRING_DATASOURCE_USERNAME:root}
+    password: ${SPRING_DATASOURCE_PASSWORD:rootpw}
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+
+  data:
+    redis:
+      host: ${SPRING_DATA_REDIS_HOST:localhost}
+      port: ${SPRING_DATA_REDIS_PORT:6379}
+
+  rabbitmq:
+    host: ${SPRING_RABBITMQ_HOST:localhost}
+    port: ${SPRING_RABBITMQ_PORT:5672}
+    username: ${SPRING_RABBITMQ_USERNAME:guest}
+    password: ${SPRING_RABBITMQ_PASSWORD:guest}
+    listener:
+      simple:
+        acknowledge-mode: manual
+        prefetch: 10
+        default-requeue-rejected: false
+
+  lifecycle:
+    timeout-per-shutdown-phase: 30s
+
+server.shutdown: graceful
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      show-details: always
+
+# ── business rules, externalised per section 3.10 ─────────────
+shopflow:
+  customs:
+    eu-countries: [DE, FR, IT, ES, NL, BE, IE, PL, PT, AT, SE, DK, FI]
+    embargoed: [XX, YY]
+    duty-rate: 0.18
+  express:
+    surcharge-rate: 0.12
+  idempotency:
+    ttl: 86400s
