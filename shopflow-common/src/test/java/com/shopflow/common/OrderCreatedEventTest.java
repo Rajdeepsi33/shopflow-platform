@@ -1,5 +1,8 @@
 package com.shopflow.common;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+
 import com.shopflow.common.enums.ShippingType;
 import com.shopflow.common.event.OrderCreatedEvent;
 import org.junit.jupiter.api.Test;
@@ -63,5 +66,30 @@ class OrderCreatedEventTest {
         assertEquals(ShippingType.EXPRESS, event.shippingType());
         assertEquals(new BigDecimal("129.98"), event.orderTotal());
         assertEquals(1, event.schemaVersion());
+    }
+
+    @Test
+    void unknownFieldsAreIgnoredSoNewerProducersDoNotBreakOlderConsumers() throws Exception {
+        String jsonFromNewerProducer = """
+                {
+                  "eventId": "evt-1",
+                  "eventType": "ORDER_CREATED",
+                  "occurredAt": "2026-07-27T10:15:30Z",
+                  "schemaVersion": 1,
+                  "orderRef": "order-1",
+                  "customerEmail": "jane.doe@example.com",
+                  "shippingType": "EXPRESS",
+                  "destinationCountry": "DE",
+                  "orderTotal": 129.98,
+                  "items": [],
+                  "promoCode": "SUMMER25"
+                }
+                """;
+
+        ObjectMapper mapper = new ObjectMapper().registerModule(new JavaTimeModule());
+        OrderCreatedEvent event = mapper.readValue(jsonFromNewerProducer, OrderCreatedEvent.class);
+
+        assertEquals("order-1", event.orderRef());
+        assertEquals(ShippingType.EXPRESS, event.shippingType());
     }
 }

@@ -1,5 +1,6 @@
 server:
   port: 8082
+  shutdown: graceful
 
 spring:
   application:
@@ -38,8 +39,6 @@ spring:
   lifecycle:
     timeout-per-shutdown-phase: 30s
 
-server.shutdown: graceful
-
 management:
   endpoints:
     web:
@@ -48,6 +47,11 @@ management:
   endpoint:
     health:
       show-details: always
+
+# ── correlation id in every log line, set by CorrelationIdFilter ──
+logging:
+  pattern:
+    console: "%d{HH:mm:ss.SSS} %-5level [%X{correlationId:-no-correlation}] %logger{36} - %msg%n"
 
 # ── business rules, externalised per section 3.10 ─────────────
 shopflow:
